@@ -2,7 +2,7 @@
 
 echo "Greetings $USER 🦋"
 
-BASE_DIR="/Users/ellis/Downloads/veloz"  ### Set to folder containing images to process
+BASE_DIR="/Volumes/LetterPerf/5_LetterPerfect/5_LetterPerfectTIFF"  ### Set to folder containing images to process
 
 echo "This script allows you to do multiple shell tasks in one! 
 Working directly in: $BASE_DIR
@@ -10,7 +10,7 @@ Working directly in: $BASE_DIR
 Press 'j' to convert .tif files to .jpg
 Press 'c' to autocrop .jpg files
 Press 'm' to add 40px margin to .jpg files
-Press 'r' to resize .jpg files and make mids
+Press 'r' to resize .jpg files 
 Press 'q' to quit
 "
 
@@ -20,17 +20,42 @@ while [[ ! $REPLY =~ ^[Qq]$ ]]; do
 
     case $REPLY in
         [Jj])
-            files="$BASE_DIR"/*.tif
+            # files="$BASE_DIR"/*.tif # ALL FILES 
+            files="$BASE_DIR"/arc*.tif # ARCPUB FILES ONLY
+            # files="$BASE_DIR"/lfa*.tif # LFA FILES ONLY
             total_files=$(ls -1 $files 2>/dev/null | wc -l)
             current_file=0 
 
             for file in $files; do
                 printf "\r🔁 Converting %d of %d TIFFs to JPGs\033[K" "$((++current_file))" "$total_files"
-                convert "$file" -flatten "${file%.tif}.jpg" 2>/dev/null
+
+                # Count the number of layers (frames/pages) in the TIFF, suppress warnings 
+                layer_count=$(identify "$file" 2>/dev/null | wc -l)
+
+                # If more than one layer, flatten first
+                if [ "$layer_count" -gt 1 ]; then
+                    convert "$file" -flatten "${file%.tif}.jpg" 2>/dev/null
+                else
+                    convert "$file" "${file%.tif}.jpg" 2>/dev/null
+                fi
+
                 [[ $? -ne 0 ]] && printf "\n❗ Error converting $file\n"
             done
             echo -e "\n✅ TIFF to JPG conversion complete."
             ;;
+
+        # [Jj])
+        #     files="$BASE_DIR"/*.tif
+        #     total_files=$(ls -1 $files 2>/dev/null | wc -l)
+        #     current_file=0 
+
+        #     for file in $files; do
+        #         printf "\r🔁 Converting %d of %d TIFFs to JPGs\033[K" "$((++current_file))" "$total_files"
+        #         convert "$file" -flatten "${file%.tif}.jpg" 2>/dev/null
+        #         [[ $? -ne 0 ]] && printf "\n❗ Error converting $file\n"
+        #     done
+        #     echo -e "\n✅ TIFF to JPG conversion complete."
+        #     ;;
 
         [Cc])
             # Normalize file extensions
@@ -72,16 +97,12 @@ while [[ ! $REPLY =~ ^[Qq]$ ]]; do
             for file in $files; do
                 printf "\r🔁 Resizing %d of %d JPGs\033[K" "$((++current_file))" "$total_files"
 
-                # Create a mid-size version (800px max) next to original
-                cp -n "$file" "${file%.*}_mid.jpg"
-                mogrify -resize 800x800\> "${file%.*}_mid.jpg" 2>/dev/null
-
                 # Resize original to max 3000px
                 mogrify -resize 3000x3000\> "$file" 2>/dev/null
 
                 [[ $? -ne 0 ]] && printf "\n❗ Error resizing $file\n"
             done        
-            echo -e "\n🌲 Resizing complete: 3000px fulls & 800px mids created."
+            echo -e "\n🌲 Resizing complete."
             ;;
 
         [Qq])
@@ -92,7 +113,7 @@ while [[ ! $REPLY =~ ^[Qq]$ ]]; do
             \nPress 'j' to convert .tif to .jpg
             \nPress 'c' to autocrop .jpg files
             \nPress 'm' to add 40px margin to .jpg files
-            \nPress 'r' to resize .jpg files and create mids
+            \nPress 'r' to resize .jpg files 
             \nPress 'q' to quit"
             ;;
     esac
